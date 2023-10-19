@@ -1,0 +1,38 @@
+[project]
+name = "timer"
+version = "0.1.0"
+dependencies = []
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.flake8]
+ignore = "E203,E301,E302,E501,W503"
+
+[tool.pylint]
+disable = "C0114,C0115,C0116"
+max-line-length = 79
+good-names = ""
+
+[tool.mypy]
+python_version = 3.11
+exclude = "build"
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+check_untyped_defs = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = "*.*"
+ignore_missing_imports = true
+
+[tool.black]
+line-length = 79
+target-version = ['py311']
+skip-string-normalization = true
+
+[tool.isort]
+profile = "black"
+line_length = 79
