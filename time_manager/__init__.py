@@ -1,4 +1,4 @@
-from .timer import Timer, update_timer_defaults
+from .time_manager import Timer, update_timer_defaults
 
 __all__ = (
     'Timer',
