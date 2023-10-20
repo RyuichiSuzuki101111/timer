@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from types import TracebackType
-from typing import Callable, Iterator, Optional, ParamSpec
+from typing import Callable, Optional, ParamSpec
 
 P = ParamSpec('P')
 
@@ -62,11 +62,8 @@ class Timer:
     def check_timeout(self) -> bool:
         return self.end_timestamp <= time.time()
 
-    def is_active(self) -> Iterator[bool]:
-        while not self.check_timeout():
-            yield True
-            time.sleep(self.dt)
-        yield False
+    def is_active(self) -> bool:
+        return not self.check_timeout()
 
     def timeout_error(self) -> TimeoutError:
         if self.task_label is None:
