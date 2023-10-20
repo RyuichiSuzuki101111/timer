@@ -62,9 +62,6 @@ class Timer:
     def check_timeout(self) -> bool:
         return self.end_timestamp <= time.time()
 
-    def is_active(self) -> bool:
-        return not self.check_timeout()
-
     def timeout_error(self) -> TimeoutError:
         if self.task_label is None:
             return TimeoutError('task timeout!')
@@ -77,9 +74,10 @@ class Timer:
         """受け取った関数がTrueを返すまでループする。
         タイムアウトになった場合, TimeoutErrorを発生させる
         """
-        while self.is_active():
+        while not self.check_timeout():
             if condition(*args, **kwargs):
                 return
+            self.sleep()
         raise self.timeout_error()
 
     def __enter__(self) -> Timer:
