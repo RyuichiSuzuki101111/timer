@@ -3,31 +3,52 @@
 from __future__ import annotations
 
 from types import TracebackType
-from typing import Callable, Optional, ParamSpec
+from typing import Callable, Coroutine, Optional, ParamSpec, overload
 
 P = ParamSpec('P')
 
-def update_timer_defaults(
-    timeout: Optional[float] = None, dt: Optional[float] = None
+def set_timer_defaults(
+    timer_context_key: str = 'global',
+    timeout: Optional[float] = None,
+    polling_time: Optional[float] = None,
 ) -> None: ...
 
 class Timer:
+    @overload
+    def __init__(self, task_label: Optional[str] = None): ...
+    @overload
     def __init__(
         self,
-        timeout: Optional[float] = None,
-        dt: Optional[float] = None,
         task_label: Optional[str] = None,
-    ) -> None: ...
+        *,
+        timer_context_key: str = 'global',
+    ): ...
+    @overload
+    def __init__(
+        self,
+        task_label: Optional[str] = None,
+        *,
+        timeout: Optional[float] = None,
+        polling_time: Optional[float] = None,
+    ): ...
     @property
-    def dt(self) -> float: ...
+    def polling_time(self) -> float: ...
     @property
     def timeout(self) -> float: ...
-    def start(self) -> None: ...
-    def sleep(self) -> None: ...
+    def start(self) -> Timer: ...
     def check_timeout(self) -> bool: ...
     def timeout_error(self) -> TimeoutError: ...
     def wait_until(
-        self, condition: Callable[P, bool], *args: P.args, **kwargs: P.kwargs
+        self,
+        condition: Callable[P, bool],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> None: ...
+    async def wait_until_async(
+        self,
+        condition: Callable[P, Coroutine[bool, None, None]],
+        *args: P.args,
+        **kwargs: P.kwargs,
     ) -> None: ...
     def __enter__(self) -> Timer: ...
     def __exit__(
@@ -35,4 +56,4 @@ class Timer:
         exc_type: type[Exception],
         exc_value: Exception,
         exc_traceback: TracebackType,
-    ) -> None: ...
+    ) -> bool: ...

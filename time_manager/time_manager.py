@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import time
 from types import TracebackType
-from typing import Callable, Coroutine, Optional, ParamSpec
+from typing import Callable, Coroutine, Optional, ParamSpec, overload
 import asyncio
-from typing import overload
 
 P = ParamSpec('P')
 
