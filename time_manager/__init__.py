@@ -1,6 +1,6 @@
-from .time_manager import Timer, update_timer_defaults
+from .time_manager import Timer, set_timer_defaults
 
 __all__ = (
     'Timer',
-    'update_timer_defaults',
+    'set_timer_defaults',
 )
