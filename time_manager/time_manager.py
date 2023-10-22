@@ -2,101 +2,73 @@ from __future__ import annotations
 
 import time
 from types import TracebackType
-from typing import Callable, Coroutine, Optional, ParamSpec, overload
+from typing import Callable, Coroutine, Optional, ParamSpec
 import asyncio
 
 P = ParamSpec('P')
 
 
-class _TimerConfig:
-    timer_configs: dict[str, _TimerConfig] = {}
-    default_timeout: float = 2e6
-    default_polling_time: float = 2e-6
-
-    def __init__(
-        self, timeout: Optional[float], polling_time: Optional[float]
-    ) -> None:
-        if polling_time is None:
-            self.polling_time = _TimerConfig.default_polling_time
-        else:
-            self.polling_time = polling_time
-
-        if timeout is None:
-            self.timeout = _TimerConfig.default_timeout
-        else:
-            self.timeout = timeout
+# TimerContextTokenと timeout, polling_timeのペアの対応を管理する辞書
+_timer_context: dict[TimerContextToken, tuple[float, float]] = {}
 
 
-def set_timer_defaults(
-    timer_context_key: str = 'global',
-    timeout: Optional[float] = None,
-    polling_time: Optional[float] = None,
-) -> None:
-    match timer_context_key:
-        case 'global':
-            if polling_time is not None:
-                _TimerConfig.default_polling_time = polling_time
-            if timeout is not None:
-                _TimerConfig.default_timeout = timeout
-        case _:
-            _TimerConfig.timer_configs[timer_context_key] = _TimerConfig(
-                timeout, polling_time
-            )
+class InvalidTokenError(Exception):
+    """
+    破壊済みのトークンを利用しようとしたときに発生する。
+    """
+
+
+class TimerContextToken:
+    _is_active: bool = True
+
+    def __hash__(self) -> int:
+        if self._is_active:
+            return id(self)
+
+        raise InvalidTokenError(f'トークン{self!r}は破壊済みです。')
+
+    def __eq__(self, other: TimerContextToken) -> bool:
+        if not isinstance(other, TimerContextToken):
+            return NotImplemented
+
+        return self is other
+
+    def destroy(self) -> None:
+        if self._is_active:
+            del _timer_context[self]
+            self._is_active = False
+
+    def __enter__(self) -> TimerContextToken:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[Exception],
+        exc_value: Exception,
+        exc_traceback: TracebackType,
+    ) -> bool:
+        self.destroy()
+        return False
+
+
+def create_timer_context(
+    timeout: float, polling_time: float
+) -> TimerContextToken:
+    token = TimerContextToken()
+    _timer_context[token] = (timeout, polling_time)
+    return token
 
 
 class Timer:
-    @overload
-    def __init__(self, task_label: Optional[str] = None):
-        pass
-
-    @overload
     def __init__(
         self,
+        context_token: TimerContextToken,
         task_label: Optional[str] = None,
-        *,
-        timer_context_key: str = 'global',
     ):
-        pass
-
-    @overload
-    def __init__(
-        self,
-        task_label: Optional[str] = None,
-        *,
-        timeout: Optional[float] = None,
-        polling_time: Optional[float] = None,
-    ):
-        ...
-
-    def __init__(
-        self,
-        task_label: Optional[str] = None,
-        *,
-        timer_context_key: Optional[str] = None,
-        timeout: Optional[float] = None,
-        polling_time: Optional[float] = None,
-    ):
-        if timer_context_key is None:
-            timer_context_key = 'global'
-
-        timer_config = _TimerConfig.timer_configs.get(timer_context_key)
-        if timer_config is None:
-            raise ValueError(
-                f'timer_context_keyに未登録のコンテキストキー{timer_context_key}'
-                'が設定されています。'
-            )
-
-        if timeout:
-            self._timeout = timeout
-        else:
-            self._timeout = timer_config.timeout
-
-        if polling_time:
-            self._polling_time = polling_time
-        else:
-            self._polling_time = timer_config.polling_time
-
+        timeout, polling_time = _timer_context[context_token]
         self.task_label = task_label
+        self._timeout = timeout
+        self._polling_time = polling_time
         self.start_timestamp: float
         self.end_timestamp: float
         self.start()
