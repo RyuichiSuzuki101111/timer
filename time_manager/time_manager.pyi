@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import TracebackType
-from typing import Callable, Coroutine, Optional, ParamSpec
+from typing import Any, Awaitable, Callable, Optional, ParamSpec
 
 P = ParamSpec('P')
 
@@ -11,7 +11,7 @@ class InvalidTokenError(Exception): ...
 
 class TimerContextToken:
     def __hash__(self) -> int: ...
-    def __eq__(self, other: TimerContextToken) -> bool: ...
+    def __eq__(self, other: Any) -> bool: ...
     def destroy(self) -> None: ...
     def __enter__(self) -> TimerContextToken: ...
     def __exit__(
@@ -46,7 +46,7 @@ class Timer:
     ) -> None: ...
     async def wait_until_async(
         self,
-        condition: Callable[P, Coroutine[bool, None, None]],
+        condition: Callable[P, Awaitable[bool]],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> None: ...

@@ -1,14 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import time
 from types import TracebackType
-from typing import Callable, Coroutine, Optional, ParamSpec
-import asyncio
+from typing import Any, Awaitable, Callable, Optional, ParamSpec
 
 P = ParamSpec('P')
 
 
-# TimerContextTokenと timeout, polling_timeのペアの対応を管理する辞書
 _timer_context: dict[TimerContextToken, tuple[float, float]] = {}
 
 
@@ -27,7 +26,7 @@ class TimerContextToken:
 
         raise InvalidTokenError(f'トークン{self!r}は破壊済みです。')
 
-    def __eq__(self, other: TimerContextToken) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, TimerContextToken):
             return NotImplemented
 
@@ -41,7 +40,7 @@ class TimerContextToken:
     def __enter__(self) -> TimerContextToken:
         return self
 
-    def __exit__(
+    def __exit__(  # type: ignore
         self,
         exc_type: type[Exception],
         exc_value: Exception,
@@ -125,7 +124,7 @@ class Timer:
 
     async def wait_until_async(
         self,
-        condition: Callable[P, Coroutine[bool, None, None]],
+        condition: Callable[P, Awaitable[bool]],
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> None:
@@ -144,7 +143,7 @@ class Timer:
     def __enter__(self) -> Timer:
         return self
 
-    def __exit__(
+    def __exit__(  # type: ignore
         self,
         exc_type: type[Exception],
         exc_value: Exception,
