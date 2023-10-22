@@ -1,35 +1,35 @@
 # flake8: noqa
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,multiple-statements
 from __future__ import annotations
 
 from types import TracebackType
-from typing import Callable, Coroutine, Optional, ParamSpec, overload
+from typing import Callable, Coroutine, Optional, ParamSpec
 
 P = ParamSpec('P')
 
-def set_timer_defaults(
-    timer_context_key: str = 'global',
-    timeout: Optional[float] = None,
-    polling_time: Optional[float] = None,
-) -> None: ...
+class InvalidTokenError(Exception): ...
+
+class TimerContextToken:
+    def __hash__(self) -> int: ...
+    def __eq__(self, other: TimerContextToken) -> bool: ...
+    def destroy(self) -> None: ...
+    def __enter__(self) -> TimerContextToken: ...
+    def __exit__(
+        self,
+        exc_type: type[Exception],
+        exc_value: Exception,
+        exc_traceback: TracebackType,
+    ) -> bool: ...
+
+def create_timer_context(
+    timeout: float, polling_time: float
+) -> TimerContextToken: ...
 
 class Timer:
-    @overload
-    def __init__(self, task_label: Optional[str] = None): ...
-    @overload
     def __init__(
         self,
+        context_token: TimerContextToken,
         task_label: Optional[str] = None,
-        *,
-        timer_context_key: str = 'global',
-    ): ...
-    @overload
-    def __init__(
-        self,
-        task_label: Optional[str] = None,
-        *,
-        timeout: Optional[float] = None,
-        polling_time: Optional[float] = None,
     ): ...
     @property
     def polling_time(self) -> float: ...
